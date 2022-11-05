@@ -1,3 +1,21 @@
+######
+submit dev f1:
+processed 16261 tokens with 1123 phrases; found: 822 phrases; correct: 404.
+accuracy:  33.60%; (non-O)
+accuracy:  94.07%; precision:  49.15%; recall:  35.98%; FB1:  41.54
+          company: precision:  41.46%; recall:  34.69%; FB1:  37.78  41
+         facility: precision:  54.55%; recall:  38.96%; FB1:  45.45  55
+          geo-loc: precision:  53.29%; recall:  56.33%; FB1:  54.77  167
+            movie: precision:  23.08%; recall:  10.00%; FB1:  13.95  13
+      musicartist: precision:  25.00%; recall:   5.33%; FB1:   8.79  16
+            other: precision:  25.96%; recall:  23.58%; FB1:  24.71  208
+           person: precision:  67.87%; recall:  64.26%; FB1:  66.02  249
+          product: precision:  45.24%; recall:  12.03%; FB1:  19.00  42
+       sportsteam: precision:  62.07%; recall:  21.95%; FB1:  32.43  29
+           tvshow: precision:  50.00%; recall:  50.00%; FB1:  50.00  2
+######
+
+
 Note that you are advised to use RNN, GRU or LSTM models for this assignment, and Word Embedding should be used.
 The evaluation scores of submission are not the only metrics.
 Code integrity will also be considered a critical part.
