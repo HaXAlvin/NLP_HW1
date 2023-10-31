@@ -4,11 +4,11 @@ from torchtext.vocab import GloVe
 import re
 
 
-def get_data(path="./datas/twitter/train.txt"):
-    with open(path, "r") as f:
+def read_data(file_name):
+    with open(f"./datas/twitter/{file_name}.txt", "r") as f:
         lines = f.readlines()
     datas = [[[]], [[]]]  # [ sequences, tags(or origin sequence) ]
-    submit = "submit" in path  # if submitting, change return tag to return origin word
+    submit = "test-submit" == file_name  # if submitting, change return tag to return origin word
     for line in lines:
         if line == "\n":  # new sequence
             datas[0].append([])
