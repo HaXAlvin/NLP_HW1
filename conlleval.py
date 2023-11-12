@@ -25,7 +25,6 @@ S-PER  O     O  B-LOC I-LOC E-LOC O
 prefix: IOBES
 chunk_type: PER, LOC, etc.
 """
-from __future__ import division, print_function, unicode_literals
 from collections import defaultdict
 
 
@@ -36,9 +35,9 @@ def split_tag(chunk_tag):
     B-PER -> (B, PER)
     O -> (O, None)
     """
-    if chunk_tag == 'O':
-        return ('O', None)
-    return chunk_tag.split('-', maxsplit=1)
+    if chunk_tag == "O":
+        return ("O", None)
+    return chunk_tag.split("-", maxsplit=1)
 
 
 def is_chunk_end(prev_tag, tag):
@@ -54,15 +53,15 @@ def is_chunk_end(prev_tag, tag):
     prefix1, chunk_type1 = split_tag(prev_tag)
     prefix2, chunk_type2 = split_tag(tag)
 
-    if prefix1 == 'O':
+    if prefix1 == "O":
         return False
-    if prefix2 == 'O':
-        return prefix1 != 'O'
+    if prefix2 == "O":
+        return prefix1 != "O"
 
     if chunk_type1 != chunk_type2:
         return True
 
-    return prefix2 in ['B', 'S'] or prefix1 in ['E', 'S']
+    return prefix2 in ["B", "S"] or prefix1 in ["E", "S"]
 
 
 def is_chunk_start(prev_tag, tag):
@@ -72,15 +71,15 @@ def is_chunk_start(prev_tag, tag):
     prefix1, chunk_type1 = split_tag(prev_tag)
     prefix2, chunk_type2 = split_tag(tag)
 
-    if prefix2 == 'O':
+    if prefix2 == "O":
         return False
-    if prefix1 == 'O':
-        return prefix2 != 'O'
+    if prefix1 == "O":
+        return prefix2 != "O"
 
     if chunk_type1 != chunk_type2:
         return True
 
-    return prefix2 in ['B', 'S'] or prefix1 in ['E', 'S']
+    return prefix2 in ["B", "S"] or prefix1 in ["E", "S"]
 
 
 def calc_metrics(tp, p, t, percent=True):
@@ -91,10 +90,8 @@ def calc_metrics(tp, p, t, percent=True):
     precision = tp / p if p else 0
     recall = tp / t if t else 0
     fb1 = 2 * precision * recall / (precision + recall) if precision + recall else 0
-    if percent:
-        return 100 * precision, 100 * recall, 100 * fb1
-    else:
-        return precision, recall, fb1
+    rate = 100 if percent else 1
+    return rate * precision, rate * recall, rate * fb1
 
 
 def count_chunks(true_seqs, pred_seqs):
@@ -119,7 +116,7 @@ def count_chunks(true_seqs, pred_seqs):
     true_counts = defaultdict(int)
     pred_counts = defaultdict(int)
 
-    prev_true_tag, prev_pred_tag = 'O', 'O'
+    prev_true_tag, prev_pred_tag = "O", "O"
     correct_chunk = None
 
     for true_tag, pred_tag in zip(true_seqs, pred_seqs):
@@ -171,10 +168,10 @@ def get_result(correct_chunks, true_chunks, pred_chunks, correct_counts, true_co
     sum_correct_counts = sum(correct_counts.values())
     sum_true_counts = sum(true_counts.values())
 
-    nonO_correct_counts = sum(v for k, v in correct_counts.items() if k != 'O')
-    nonO_true_counts = sum(v for k, v in true_counts.items() if k != 'O')
+    nonO_correct_counts = sum(v for k, v in correct_counts.items() if k != "O")
+    nonO_true_counts = sum(v for k, v in true_counts.items() if k != "O")
 
-    chunk_types = sorted(list(set(list(true_chunks) + list(pred_chunks))))
+    chunk_types = sorted(set(list(true_chunks) + list(pred_chunks)))
 
     # compute overall precision, recall and FB1 (default values are 0.0)
     prec, rec, f1 = calc_metrics(sum_correct_chunks, sum_pred_chunks, sum_true_chunks)
@@ -182,18 +179,18 @@ def get_result(correct_chunks, true_chunks, pred_chunks, correct_counts, true_co
     def output_result(prec, rec, f1):
         # print overall performance, and performance per chunk type
 
-        print(f"processed {sum_true_counts} tokens with {sum_true_chunks} phrases; ", end='')
-        print(f"found: {sum_pred_chunks} phrases; correct: {sum_correct_chunks}.\n", end='')
+        print(f"processed {sum_true_counts} tokens with {sum_true_chunks} phrases; ", end="")
+        print(f"found: {sum_pred_chunks} phrases; correct: {sum_correct_chunks}.\n", end="")
 
-        print(f"accuracy: {100*nonO_correct_counts/nonO_true_counts:6.2f}%; (non-O)")
-        print(f"accuracy: {100*sum_correct_counts/sum_true_counts:6.2f}%; ", end='')
+        print(f"accuracy: {100 * nonO_correct_counts / nonO_true_counts:6.2f}%; (non-O)")
+        print(f"accuracy: {100 * sum_correct_counts / sum_true_counts:6.2f}%; ", end="")
         print(f"precision: {prec:6.2f}%; recall: {rec:6.2f}%; FB1: {f1:6.2f}")
 
         # for each chunk type, compute precision, recall and FB1 (default values are 0.0)
         for t in chunk_types:
             t_prec, t_rec, t_f1 = calc_metrics(correct_chunks[t], pred_chunks[t], true_chunks[t])
-            print(f"{t:17s}: ", end='')
-            print(f"precision: {t_prec:6.2f}%; recall: {t_rec:6.2f}; FB1: {t_f1:6.2f}", end='')
+            print(f"{t:17s}: ", end="")
+            print(f"precision: {t_prec:6.2f}%; recall: {t_rec:6.2f}; FB1: {t_f1:6.2f}", end="")
             print(f"  {pred_chunks[t]}")
 
     if verbose:
@@ -202,6 +199,4 @@ def get_result(correct_chunks, true_chunks, pred_chunks, correct_counts, true_co
 
 
 def evaluate(true_seqs, pred_seqs, verbose=True):
-    correct_chunks, true_chunks, pred_chunks, correct_counts, true_counts, pred_counts = count_chunks(true_seqs, pred_seqs)
-    result = get_result(correct_chunks, true_chunks, pred_chunks, correct_counts, true_counts, pred_counts, verbose=verbose)
-    return result
+    return get_result(*count_chunks(true_seqs, pred_seqs), verbose=verbose)

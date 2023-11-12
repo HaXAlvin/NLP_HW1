@@ -1,14 +1,16 @@
+import re
+from pathlib import Path
+
 import torch
 from torch.utils.data import Dataset
 from torchtext.vocab import GloVe
-import re
 
 
 def read_data(file_name):
-    with open(f"./datas/twitter/{file_name}.txt", "r") as f:
+    with Path(f"./datas/twitter/{file_name}.txt").open() as f:
         lines = f.readlines()
     datas = [[[]], [[]]]  # [ sequences, tags(or origin sequence) ]
-    submit = "test-submit" == file_name  # if submitting, change return tag to return origin word
+    submit = file_name == "test-submit"  # if submitting, change return tag to return origin word
     for line in lines:
         if line == "\n":  # new sequence
             datas[0].append([])
@@ -50,10 +52,10 @@ def create_pretrained_embedding(name, embedding_size):
 
     def add_token(token):
         if glove.stoi.get(token, None) is not None:
-            print(f"\"{token}\" is already in Glove")
+            print(f'"{token}" is already in Glove')
             return
         glove.itos.append(token)
-        glove.stoi[token] = glove.itos.index(token)
+        glove.stoi[token] = len(glove.itos) - 1
         glove.vectors = torch.cat((glove.vectors, mean_vector), dim=0)
     add_token("<unk>")
     add_token("<pad>")

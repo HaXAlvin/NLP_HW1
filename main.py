@@ -1,15 +1,18 @@
-import torch
-from NERDataSet import read_data
-from torch.nn.utils.rnn import pad_packed_sequence, PackedSequence
 from collections import Counter
-from conlleval import evaluate
+from pathlib import Path
+
+import torch
+from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence, unpad_sequence
 from torch.utils.tensorboard import SummaryWriter
+
+from conlleval import evaluate
 from NERDataLoader import NERDataLoader
+from NERDataSet import read_data
 
 
 class Net(torch.nn.Module):
     def __init__(self, embedding_size, hidden_size, output_size, bidirectional=True, dropout=0.5):
-        super(Net, self).__init__()
+        super().__init__()
         self.gru = torch.nn.GRU(
             embedding_size,
             hidden_size,
@@ -95,16 +98,17 @@ del dataloader, dev_dataloader  # release memory
 print("### Start testing ###")
 submit_dataloader = ner_dataloader.get_dataloader("submit", *read_data("test-submit"), shuffle=False, batch_size=1024)
 
+submit_text = []
 net.eval()
 with torch.no_grad():
-    with open("./my_submit.txt", "w", encoding="utf-8") as f:
-        for padded_seqs, real_word in submit_dataloader:
-            tags_predict = net(padded_seqs)
-            packed = PackedSequence(data=tags_predict, batch_sizes=padded_seqs.batch_sizes, sorted_indices=padded_seqs.sorted_indices, unsorted_indices=padded_seqs.unsorted_indices)
-            padded, out_len = pad_packed_sequence(packed, batch_first=True, padding_value=float("-inf"))  # (packed_sum_seq_len, output_size) => (batch_size, max_seq_len, output_size)
-            padded = padded.argmax(dim=-1)  # (batch_size, max_seq_len, output_size) => (batch_size, max_seq_len)
-            for i, (real_seq, seq_len) in enumerate(zip(real_word, out_len)):
-                for word, tag in zip(real_seq, padded[i][:seq_len].tolist()):
-                    f.write(f"{word}\t{i_to_tag[tag]}\n")
-                f.write("\n")
+    for padded_seqs, real_seqs in submit_dataloader:
+        tags_predict = net(padded_seqs)
+        packed = PackedSequence(data=tags_predict, batch_sizes=padded_seqs.batch_sizes, sorted_indices=padded_seqs.sorted_indices, unsorted_indices=padded_seqs.unsorted_indices)
+        padded, out_len = pad_packed_sequence(packed, batch_first=True, padding_value=float("-inf"))  # (packed_sum_seq_len, output_size) => (batch_size, max_seq_len, output_size)
+        padded = padded.argmax(dim=-1)  # (batch_size, max_seq_len, output_size) => (batch_size, max_seq_len)
+        pred_tag_seqs = unpad_sequence(padded, out_len, batch_first=True)  # [batch_size, each_seq_len]
+        for pred_tag_seq, real_seq in zip(pred_tag_seqs, real_seqs):  # each batch(seq)
+            submit_text += [f"{real_word}\t{i_to_tag[pred_tag]}\n" for pred_tag, real_word in zip(pred_tag_seq, real_seq)] + ["\n"]
+with Path("./my_submit.txt").open("w", encoding="utf-8") as f:
+    f.writelines(submit_text)
 print("### Submit file saved ###")

@@ -1,10 +1,11 @@
-from torch.utils.data import DataLoader
-from NERDataSet import NERDataSet, create_pretrained_embedding
 import torch
-from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence
+from torch.nn.utils.rnn import pack_padded_sequence, pad_sequence
+from torch.utils.data import DataLoader
+
+from NERDataSet import NERDataSet, create_pretrained_embedding
 
 
-class NERDataLoader():
+class NERDataLoader:
     def __init__(self, tag_to_i, twitter=False):
         if twitter:
             embedding, word_to_i = create_pretrained_embedding("twitter.27B", 200)
@@ -22,26 +23,26 @@ class NERDataLoader():
             # seq => pad seq => pad emb => pack emb
             # tag => pad tag => pack tag
             # real => no change
-            batch_seq_indexs = []
-            batch_tag_indexs = []  # only use if submit=False
+            batch_seq_indexes = []
+            batch_tag_indexes = []  # only use if submit=False
             batch_real_words = []  # only use if submit=True
             seqs_len = []
             unk = self.word_to_i["<unk>"]
 
             for seqs, tags_or_words in batched_data:
                 seqs_len.append(len(seqs))
-                batch_seq_indexs.append(torch.tensor([self.word_to_i.get(word, unk) for word in seqs]))
+                batch_seq_indexes.append(torch.tensor([self.word_to_i.get(word, unk) for word in seqs]))
                 if submit:
                     batch_real_words.append(tags_or_words)
                 else:
-                    batch_tag_indexs.append(torch.tensor([self.tag_to_i[tag] for tag in tags_or_words]))
+                    batch_tag_indexes.append(torch.tensor([self.tag_to_i[tag] for tag in tags_or_words]))
 
-            padded_seqs = pad_sequence(batch_seq_indexs, batch_first=True, padding_value=self.word_to_i["<pad>"])  # (batch_size, each_seq_len) => (batch_size, max_seq_len)
+            padded_seqs = pad_sequence(batch_seq_indexes, batch_first=True, padding_value=self.word_to_i["<pad>"])  # (batch_size, each_seq_len) => (batch_size, max_seq_len)
             packed_seqs = pack_padded_sequence(self.embedding(padded_seqs), seqs_len, batch_first=True, enforce_sorted=False)  # (batch_size, max_seq_len) => (batch_size, max_seq_len, embedding_size) => (packed_sum_seq_len, embedding_size)
             if submit:
                 return packed_seqs, batch_real_words
 
-            padded_tags = pad_sequence(batch_tag_indexs, batch_first=True, padding_value=-1)  # (batch_size, each_seq_len) => (batch_size, max_seq_len)
+            padded_tags = pad_sequence(batch_tag_indexes, batch_first=True, padding_value=-1)  # (batch_size, each_seq_len) => (batch_size, max_seq_len)
             packed_tags = pack_padded_sequence(padded_tags, seqs_len, batch_first=True, enforce_sorted=False)  # (batch_size, max_seq_len) => (packed_sum_seq_len)
 
             # pack will sort input by length, this is to make sure word-tag pair will not unpaired after pack
